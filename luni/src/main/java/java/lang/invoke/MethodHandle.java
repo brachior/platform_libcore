@@ -32,6 +32,7 @@
 
 package java.lang.invoke;
 
+import dalvik.system.VMStack;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -434,6 +435,7 @@ public class MethodHandle {
     private static native int getMethodVMSlot(int kind, Class<?> declaringClass, String methodName, MethodType methodType)
             throws NoSuchMethodException, IllegalAccessException;
 
+    // used by Lookup.findGetter/findSetter, etc.
     static MethodHandle createFieldMH(int kind, Class<?> declaringClass, String memberName, Class<?> type)
             throws NoSuchFieldException, IllegalAccessException {
         int slot;
@@ -462,18 +464,102 @@ public class MethodHandle {
         return new MethodHandle(kind, slot, methodType);
     }
 
+    // used by Lookup.findVirtual/findStatic etc.
     static MethodHandle createMethodMH(int kind, Class<?> declaringClass, String memberName, MethodType type)
             throws NoSuchMethodException, IllegalAccessException {
         return new MethodHandle(kind, getMethodVMSlot(kind, declaringClass, memberName, type), type);
     }
     
+    // used by Lookup.unreflect*
     static native int extractFieldVMSlot(Field field)
             throws IllegalAccessException;
     static native int extractMethodVMSlot(Method method)
             throws IllegalAccessException;
     static native int extractConstructorVMSlot(Constructor<?> constructor)
             throws IllegalAccessException;
+    
+    // VM entry point to create a field and method based constant method handle
+    // throws a LinkageError if an error occurs
+    private static MethodHandle createConstantMH(int kind, Class<?> declaringClass, String memberName, String descriptor) {
+        try {
+          switch(kind) {
+          case REF_getField:
+          case REF_getStatic:
+          case REF_putField:
+          case REF_putStatic:
+              return createFieldMH(kind, declaringClass, memberName, fromFieldDescriptorString(descriptor, VMStack.getCallingClassLoader()));    
+          case REF_invokeVirtual:
+          case REF_invokeStatic:
+          case REF_invokeSpecial:
+              return createMethodMH(kind, declaringClass, memberName, MethodType.fromMethodDescriptorString(descriptor, VMStack.getCallingClassLoader()));
+          default:
+              throw new ClassFormatError();
+          }
+        } catch(Exception e) {
+            throw (ClassFormatError)new ClassFormatError().initCause(e);
+        }
+    }
 
+    private static Class<?> fromFieldDescriptorString(String descriptor, ClassLoader loader) {
+        Class<?> type;
+        int i = 0;
+        int dimension = 0;
+        loop: for(;;) {  // only for array
+            switch(descriptor.charAt(i)) {
+            case '[':
+                i++;
+                dimension++;
+                continue loop;
+            case 'V':
+                type = void.class;
+                break loop;
+            case 'Z':
+                type = boolean.class;
+                break loop;
+            case 'B':
+                type = byte.class;
+                break loop;
+            case 'S':
+                type = short.class;
+                break loop;
+            case 'C':
+                type = char.class;
+                break loop;
+            case 'I':
+                type = int.class;
+                break loop;
+            case 'J':
+                type = long.class;
+                break loop;
+            case 'F':
+                type = float.class;
+                break loop;
+            case 'D':
+                type = double.class;
+                break loop;
+            case 'L': {
+                int index = descriptor.indexOf(';', i + 1);
+                if (index == -1) {
+                    throw new ClassFormatError();
+                }
+                String name = descriptor.substring(i+1, index).replace('/', '.');
+                try {
+                    type = Class.forName(name, false, loader);
+                } catch (ClassNotFoundException e) {
+                    throw (NoClassDefFoundError)new NoClassDefFoundError().initCause(e);
+                }
+                break loop;
+            }
+            default: // unknown tag
+                throw new ClassFormatError();
+            }
+        }
+        if (dimension != 0) {
+            type = MethodType.asArrayType(type, dimension);
+        }
+        return type;
+    }
+    
     /**
      * Reports the type of this method handle.
      * Every invocation of this method handle via {@code invokeExact} must exactly match this type.

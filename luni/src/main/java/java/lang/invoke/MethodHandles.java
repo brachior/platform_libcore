@@ -900,7 +900,6 @@ import java.util.List;
           throw new UnsupportedOperationException();
       }
 
-      /// method handle invocation (reflective style)
 
       /**
        * Produces a method handle which will invoke any method handle of the
@@ -1019,8 +1018,6 @@ import java.util.List;
       static public MethodHandle invoker(MethodType type) {
           throw new UnsupportedOperationException();
       }
-
-      /// method handle modification (creation from other method handles)
 
       /**
        * Produces a method handle which adapts the type of the

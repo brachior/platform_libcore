@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -711,6 +712,7 @@ public final class MethodType implements java.io.Serializable {
         return sb.append(')').append(returnType.getSimpleName()).toString();
     }
 
+    
     /**
      * Finds or creates an instance of a method type, given the spelling of its bytecode descriptor.
      * Convenience method for {@link #methodType(java.lang.Class, java.lang.Class[]) methodType}.
@@ -741,9 +743,14 @@ public final class MethodType implements java.io.Serializable {
         ArrayList<Class<?>> list = new ArrayList<>();
         int i = 1;
         boolean stopAtNext = false;
+        int dimension = 0;
         loop: for(;i<length;) {
             Class<?> type;
             switch(descriptor.charAt(i)) {
+            case '[':
+                dimension++;
+                i++;
+                continue loop;
             case 'V':
                 type = void.class;
                 break;
@@ -776,7 +783,7 @@ public final class MethodType implements java.io.Serializable {
                 if (index == -1) {
                     throw new IllegalArgumentException(descriptor);
                 }
-                String name = descriptor.substring(i + 1).replace('/', '.');
+                String name = descriptor.substring(i + 1, index).replace('/', '.');
                 try {
                     type = Class.forName(name, false, loader);
                 } catch (ClassNotFoundException e) {
@@ -785,12 +792,12 @@ public final class MethodType implements java.io.Serializable {
                 i = index;
                 break;
             }
-            
+
             case ')':
                 stopAtNext = true;
                 i++;
                 continue;
-                
+
             default:  // unknown tag
                 break loop;  // throw the exception
             }
@@ -798,12 +805,24 @@ public final class MethodType implements java.io.Serializable {
             if (stopAtNext) {
                 return methodType(type, list);
             }
+            if (dimension != 0) {
+                type = asArrayType(type, dimension);
+            }
             list.add(type);
             i++;
         }
         throw new IllegalArgumentException(descriptor);
     }
 
+    static Class<?> asArrayType(Class<?> type, int dimension) {
+        for(int i=0; i<dimension; i++) {
+            type = Array.newInstance(type, 0).getClass();
+        }
+        return type;
+    }
+    
+    
+    
     /**
      * Produces a bytecode descriptor representation of the method type.
      * <p>
