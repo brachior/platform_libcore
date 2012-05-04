@@ -1223,7 +1223,7 @@ import java.util.List;
        * <p>
        * This method is also equivalent to the following code:
        * <p><blockquote><pre>
-       * {@link #dropArguments(MethodHandle,int,Class...) dropArguments}(target, pos, valueTypes.toArray(new Class[0]))
+       * {@link #dropArguments(MethodHandle,int,Class[]) dropArguments}(target, pos, valueTypes.toArray(new Class[0]))
        * </pre></blockquote>
        * @param target the method handle to invoke after the arguments are dropped
        * @param valueTypes the type(s) of the argument(s) to drop
