@@ -399,6 +399,7 @@ public class MethodHandle {
     /**
      * Internal marker interface which distinguishes (to the Java compiler)
      * those methods which are <a href="MethodHandle.html#sigpoly">signature polymorphic</a>.
+     * @hide
      */
     @java.lang.annotation.Target({java.lang.annotation.ElementType.METHOD})
     @java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.RUNTIME)
@@ -497,7 +498,7 @@ public class MethodHandle {
      * @throws WrongMethodTypeException if the target's type is not identical with the caller's symbolic type descriptor
      * @throws Throwable anything thrown by the underlying method propagates unchanged through the method handle call
      */
-    public final native @PolymorphicSignature Object invokeExact(Object... args) throws Throwable;
+    public final native @java.lang.invoke.MethodHandle.PolymorphicSignature Object invokeExact(Object... args) throws Throwable;
 
     /**
      * Invokes the method handle, allowing any caller type descriptor,
@@ -532,7 +533,7 @@ public class MethodHandle {
      * @throws ClassCastException if the target's type can be adjusted to the caller, but a reference cast fails
      * @throws Throwable anything thrown by the underlying method propagates unchanged through the method handle call
      */
-    public final native @PolymorphicSignature Object invoke(Object... args) throws Throwable;
+    public final native @java.lang.invoke.MethodHandle.PolymorphicSignature Object invoke(Object... args) throws Throwable;
 
     /**
      * Performs a variable arity invocation, passing the arguments in the given array
