@@ -89,6 +89,12 @@ public interface Opcodes {
     int OP_IF_GEZ                       = 0x003b;
     int OP_IF_GTZ                       = 0x003c;
     int OP_IF_LEZ                       = 0x003d;
+    int OP_CONST_METHODTYPE             = 0x003e;
+    int OP_CONST_METHODHANDLE           = 0x003f;
+    int OP_INVOKE_EXACT                 = 0x0040;
+    int OP_INVOKE_GENERIC               = 0x0041;
+    int OP_INVOKE_EXACT_RANGE           = 0x0042;
+    int OP_INVOKE_GENERIC_RANGE         = 0x0043;
     int OP_AGET                         = 0x0044;
     int OP_AGET_WIDE                    = 0x0045;
     int OP_AGET_OBJECT                  = 0x0046;
@@ -136,11 +142,13 @@ public interface Opcodes {
     int OP_INVOKE_DIRECT                = 0x0070;
     int OP_INVOKE_STATIC                = 0x0071;
     int OP_INVOKE_INTERFACE             = 0x0072;
+    int OP_INVOKE_DYNAMIC               = 0x0073;
     int OP_INVOKE_VIRTUAL_RANGE         = 0x0074;
     int OP_INVOKE_SUPER_RANGE           = 0x0075;
     int OP_INVOKE_DIRECT_RANGE          = 0x0076;
     int OP_INVOKE_STATIC_RANGE          = 0x0077;
     int OP_INVOKE_INTERFACE_RANGE       = 0x0078;
+    int OP_INVOKE_DYNAMIC_RANGE         = 0x0079;
     int OP_NEG_INT                      = 0x007b;
     int OP_NOT_INT                      = 0x007c;
     int OP_NEG_LONG                     = 0x007d;
@@ -284,6 +292,11 @@ public interface Opcodes {
     int OP_INVOKE_DIRECT_JUMBO          = 0x24ff;
     int OP_INVOKE_STATIC_JUMBO          = 0x25ff;
     int OP_INVOKE_INTERFACE_JUMBO       = 0x26ff;
+    int OP_INVOKE_EXACT_JUMBO           = 0x27ff;
+    int OP_INVOKE_GENERIC_JUMBO         = 0x28ff;
+    int OP_INVOKE_DYNAMIC_JUMBO         = 0x29ff;
+    int OP_CONST_METHODTYPE_JUMBO       = 0x2aff;
+    int OP_CONST_METHODHANDLE_JUMBO     = 0x2bff;
     // END(libcore-opcodes)
 
     /*
