@@ -421,7 +421,7 @@ public class MethodHandle {
     //static final int REF_newInvokeSpecial = 8;
 
     private int kind;
-    private int slot;   // field or static field slot, vtable or direct table index
+    private int slot;   // offset of field or static field, directMethods/virtualMethods/vtable/itable index
     private final Class<?> declaringClass;
     private final MethodType type;
 
