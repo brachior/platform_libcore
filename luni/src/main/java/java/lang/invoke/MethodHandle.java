@@ -410,6 +410,7 @@ public class MethodHandle {
         // empty
     }
 
+
     // these enums must be modified if method handle kind is modified in the VM
     static final int REF_getField = 1;
     static final int REF_getStatic = 2;
@@ -418,7 +419,22 @@ public class MethodHandle {
     static final int REF_invokeVirtual = 5;
     static final int REF_invokeStatic = 6;
     static final int REF_invokeSpecial = 7;
-    //static final int REF_newInvokeSpecial = 8;
+    static final int REF_newInvokeSpecial = 8;
+    static final int REF_invokeInterface = 9;
+
+    static final int MH_getField = 21;
+    static final int MH_getStatic = 22;
+    static final int MH_putField = 23;
+    static final int MH_putStatic = 24;
+    static final int MH_invokeVirtual = 25;
+    static final int MH_invokeDirect = 26;
+    static final int MH_newInstance = 28;
+    static final int MH_invokeInterface = 29;
+
+    static final int MH_getVolatileField = 41;
+    static final int MH_getVolatileStatic = 42;
+    static final int MH_putVolatileField = 43;
+    static final int MH_putVolatileStatic = 44;
 
     private int kind;
     private int slot;   // offset of field or static field, directMethods/virtualMethods/vtable/itable index
@@ -434,71 +450,75 @@ public class MethodHandle {
         this.type = type;
     }
 
-    private static native int getFieldVMSlot(int kind, Class<?> declaringClass, String fieldName, Class<?> type)
+    private static native long getFieldVMInfo(int refKind, Class<?> declaringClass, String fieldName, Class<?> type)
             throws NoSuchFieldException, IllegalAccessException;
 
-    private static native int getMethodVMSlot(int kind, Class<?> declaringClass, String methodName, MethodType methodType)
+    private static native long getMethodVMInfo(int refKind, Class<?> declaringClass, String methodName, String descriptor)
             throws NoSuchMethodException, IllegalAccessException;
 
     // used by Lookup.findGetter/findSetter, etc.
-    static MethodHandle createFieldMH(int kind, Class<?> declaringClass, String memberName, Class<?> type)
+    static MethodHandle createFieldMH(int refKind, Class<?> declaringClass, String memberName, Class<?> type)
             throws NoSuchFieldException, IllegalAccessException {
-        int slot;
+        long info;
         MethodType methodType;
-        switch (kind) {
-            case REF_getField:
-                slot = getFieldVMSlot(kind, declaringClass, memberName, type);
+        switch (refKind) {
+            case MH_getField:
+                info = getFieldVMInfo(refKind, declaringClass, memberName, type);
                 methodType = MethodType.methodType(type, declaringClass);
                 break;
-            case REF_getStatic:
-                slot = getFieldVMSlot(kind, declaringClass, memberName, type);
+            case MH_getStatic:
+                info = getFieldVMInfo(refKind, declaringClass, memberName, type);
                 methodType = MethodType.methodType(type);
                 break;
-            case REF_putField:
-                slot = getFieldVMSlot(kind, declaringClass, memberName, type);
+            case MH_putField:
+                info = getFieldVMInfo(refKind, declaringClass, memberName, type);
                 methodType = MethodType.methodType(void.class, declaringClass, type);
                 break;
-            case REF_putStatic:
-                slot = getFieldVMSlot(kind, declaringClass, memberName, type);
+            case MH_putStatic:
+                info = getFieldVMInfo(refKind, declaringClass, memberName, type);
                 methodType = MethodType.methodType(void.class, type);
                 break;
             default:
                 throw new InternalError();
         }
-
+        int slot = (int)(info & 0xFFFFFFFF);
+        int kind = (int)(info >>> 32);
         return new MethodHandle(kind, slot, declaringClass, methodType);
     }
 
     // used by Lookup.findVirtual/findStatic etc.
-    static MethodHandle createMethodMH(int kind, Class<?> declaringClass, String memberName, MethodType type)
+    static MethodHandle createMethodMH(int refKind, Class<?> declaringClass, String memberName, MethodType type)
             throws NoSuchMethodException, IllegalAccessException {
-        return new MethodHandle(kind, getMethodVMSlot(kind, declaringClass, memberName, type), declaringClass, type);
+        long info = getMethodVMInfo(refKind, declaringClass, memberName, type.toMethodDescriptorString());
+        int slot = (int)(info & 0xFFFFFFFF);
+        int kind = (int)(info >>> 32);
+        return new MethodHandle(kind, slot, declaringClass, type);
     }
 
     // used by Lookup.unreflect*
-    static native int extractFieldVMSlot(Field field)
+    static native long extractFieldVMInfo(Field field, int refKind)
             throws IllegalAccessException;
 
-    static native int extractMethodVMSlot(Method method)
+    static native long extractMethodVMInfo(Method method)
             throws IllegalAccessException;
 
-    static native int extractConstructorVMSlot(Constructor<?> constructor)
+    static native long extractConstructorVMInfo(Constructor<?> constructor)
             throws IllegalAccessException;
 
     // VM entry point to create a field and method based constant method handle
     // throws a LinkageError if an error occurs
-    private static MethodHandle createConstantMH(int kind, Class<?> declaringClass, String memberName, String descriptor) {
+    private static MethodHandle createConstantMH(int refKind, Class<?> declaringClass, String memberName, String descriptor) {
         try {
-            switch (kind) {
+            switch (refKind) {
                 case REF_getField:
                 case REF_getStatic:
                 case REF_putField:
                 case REF_putStatic:
-                    return createFieldMH(kind, declaringClass, memberName, fromFieldDescriptorString(descriptor, VMStack.getCallingClassLoader()));
+                    return createFieldMH(refKind, declaringClass, memberName, fromFieldDescriptorString(descriptor, VMStack.getCallingClassLoader()));
                 case REF_invokeVirtual:
                 case REF_invokeStatic:
                 case REF_invokeSpecial:
-                    return createMethodMH(kind, declaringClass, memberName, MethodType.fromMethodDescriptorString(descriptor, VMStack.getCallingClassLoader()));
+                    return createMethodMH(refKind, declaringClass, memberName, MethodType.fromMethodDescriptorString(descriptor, VMStack.getCallingClassLoader()));
                 default:
                     throw new ClassFormatError();
             }
